@@ -45,6 +45,11 @@ public class DepartmentService {
 
     // Delete department
     public void deleteDepartment(Integer id) {
+
+        if (!departmentRepository.existsById(id)) {
+            throw new RuntimeException("Department not found");
+        }
+
         departmentRepository.deleteById(id);
     }
 }
