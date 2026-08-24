@@ -3,6 +3,7 @@ package org.example.universitybackend.entity;
 import jakarta.persistence.*;
 
 import java.time.LocalDate;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 @Entity
 @Table(name = "student")
@@ -20,6 +21,7 @@ public class Student {
     private String email;
 
     @Column(name = "password", nullable = false, length = 255)
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String password;
 
     @Column(name = "phone", length = 15)
