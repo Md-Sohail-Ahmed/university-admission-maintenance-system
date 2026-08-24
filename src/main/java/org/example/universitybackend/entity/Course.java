@@ -2,6 +2,8 @@ package org.example.universitybackend.entity;
 
 import jakarta.persistence.*;
 
+import java.math.BigDecimal;
+
 @Entity
 @Table(name = "course")
 public class Course {
@@ -18,7 +20,7 @@ public class Course {
     private String duration;
 
     @Column(name = "fees")
-    private Double fees;
+    private BigDecimal fees;
 
     @ManyToOne
     @JoinColumn(name = "department_id")
@@ -48,11 +50,11 @@ public class Course {
         this.duration = duration;
     }
 
-    public Double getFees() {
+    public BigDecimal  getFees() {
         return fees;
     }
 
-    public void setFees(Double fees) {
+    public void setFees(BigDecimal  fees) {
         this.fees = fees;
     }
 
