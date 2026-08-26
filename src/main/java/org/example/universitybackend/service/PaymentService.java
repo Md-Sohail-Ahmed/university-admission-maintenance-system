@@ -3,6 +3,7 @@ package org.example.universitybackend.service;
 import com.razorpay.Order;
 import com.razorpay.RazorpayClient;
 import com.razorpay.Utils;
+import org.example.universitybackend.dto.RazorpayOrderResponse;
 import org.example.universitybackend.entity.Admission;
 import org.example.universitybackend.entity.Payment;
 import org.example.universitybackend.repository.AdmissionRepository;
@@ -26,6 +27,9 @@ public class PaymentService {
     @Value("${razorpay.key.secret}")
     private String razorpayKeySecret;
 
+    @Value("${razorpay.key.id}")
+    private String razorpayKeyId;
+
     public PaymentService(
             PaymentRepository paymentRepository,
             AdmissionRepository admissionRepository,
@@ -38,7 +42,7 @@ public class PaymentService {
 
 
     // Create Razorpay order
-    public Payment createOrder(
+    public RazorpayOrderResponse createOrder(
             Integer admissionId,
             BigDecimal amount) throws Exception {
 
@@ -90,7 +94,14 @@ public class PaymentService {
 
         payment.setTransactionId(transactionId);
 
-        return paymentRepository.save(payment);
+        paymentRepository.save(payment);
+
+        return new RazorpayOrderResponse(
+                razorpayKeyId,
+                razorpayOrderId,
+                amount,
+                "INR"
+        );
     }
 
 
