@@ -16,6 +16,7 @@ public interface PaymentRepository extends JpaRepository<Payment, Integer> {
 
     Optional<Payment> findByRazorpayPaymentId(String razorpayPaymentId);
 
+
     boolean existsByRazorpayOrderId(String razorpayOrderId);
 
     boolean existsByRazorpayPaymentId(String razorpayPaymentId);

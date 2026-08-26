@@ -3,6 +3,7 @@ package org.example.universitybackend.service;
 import com.razorpay.Order;
 import com.razorpay.RazorpayClient;
 import com.razorpay.Utils;
+import org.example.universitybackend.dto.PaymentSummaryResponse;
 import org.example.universitybackend.dto.RazorpayOrderResponse;
 import org.example.universitybackend.entity.Admission;
 import org.example.universitybackend.entity.Payment;
@@ -43,8 +44,7 @@ public class PaymentService {
 
     // Create Razorpay order
     public RazorpayOrderResponse createOrder(
-            Integer admissionId,
-            BigDecimal amount) throws Exception {
+            Integer admissionId, BigDecimal amount) throws Exception {
 
         // Check admission exists
         Admission admission = admissionRepository
@@ -52,10 +52,22 @@ public class PaymentService {
                 .orElseThrow(() ->
                         new RuntimeException("Admission not found")
                 );
+        BigDecimal courseFee = admission.getCourse().getFees();
 
+        BigDecimal totalPaid =
+                getTotalPaidForAdmission(admissionId);
+
+        BigDecimal remaining =
+                courseFee.subtract(totalPaid);
+
+        if (remaining.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new RuntimeException(
+                    "Admission fee is already fully paid"
+            );
+        }
         // Validate amount
         if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new RuntimeException("Invalid payment amount");
+            throw new RuntimeException("Invalid course fee");
         }
 
         // Convert rupees to paise
@@ -163,11 +175,139 @@ public class PaymentService {
                 razorpaySignature
         );
 
+
+        com.razorpay.Payment razorpayPayment =
+                razorpayClient.payments.fetch(razorpayPaymentId);
+
+        String method = razorpayPayment.get("method");
+        payment.setPaymentMode(method);
+
         payment.setStatus("SUCCESS");
 
         return paymentRepository.save(payment);
     }
 
+
+    public void processWebhook(String payload) {
+
+        try {
+
+            org.json.JSONObject webhook =
+                    new org.json.JSONObject(payload);
+
+            String event =
+                    webhook.getString("event");
+
+            if ("payment.captured".equals(event)) {
+
+                org.json.JSONObject paymentEntity =
+                        webhook
+                                .getJSONObject("payload")
+                                .getJSONObject("payment")
+                                .getJSONObject("entity");
+
+                String razorpayPaymentId =
+                        paymentEntity.getString("id");
+
+                String razorpayOrderId =
+                        paymentEntity.getString("order_id");
+
+                String method =
+                        paymentEntity.getString("method");
+
+                Payment payment =
+                        paymentRepository
+                                .findByRazorpayOrderId(
+                                        razorpayOrderId
+                                )
+                                .orElseThrow(() ->
+                                        new RuntimeException(
+                                                "Payment not found"
+                                        )
+                                );
+
+                payment.setRazorpayPaymentId(
+                        razorpayPaymentId
+                );
+
+                payment.setPaymentMode(method);
+
+                payment.setStatus("SUCCESS");
+
+                paymentRepository.save(payment);
+            }
+
+            else if ("payment.failed".equals(event)) {
+
+                org.json.JSONObject paymentEntity =
+                        webhook
+                                .getJSONObject("payload")
+                                .getJSONObject("payment")
+                                .getJSONObject("entity");
+
+                String razorpayOrderId =
+                        paymentEntity.getString("order_id");
+
+                Payment payment =
+                        paymentRepository
+                                .findByRazorpayOrderId(
+                                        razorpayOrderId
+                                )
+                                .orElseThrow(() ->
+                                        new RuntimeException(
+                                                "Payment not found"
+                                        )
+                                );
+
+                payment.setStatus("FAILED");
+
+                paymentRepository.save(payment);
+            }
+
+        } catch (Exception e) {
+
+            throw new RuntimeException(
+                    "Failed to process webhook",
+                    e
+            );
+        }
+    }
+
+    public BigDecimal getTotalPaidForAdmission(Integer admissionId) {
+
+        List<Payment> payments =
+                paymentRepository.findByAdmissionAdmissionId(admissionId);
+
+        return payments.stream()
+                .filter(payment ->
+                        "SUCCESS".equalsIgnoreCase(payment.getStatus()))
+                .map(Payment::getAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    public BigDecimal getRemainingAmount(Integer admissionId) {
+
+        Admission admission = admissionRepository
+                .findById(admissionId)
+                .orElseThrow(() ->
+                        new RuntimeException("Admission not found")
+                );
+
+        BigDecimal courseFee =
+                admission.getCourse().getFees();
+
+        BigDecimal totalPaid =
+                getTotalPaidForAdmission(admissionId);
+
+        BigDecimal remaining =
+                courseFee.subtract(totalPaid);
+
+        if (remaining.compareTo(BigDecimal.ZERO) < 0) {
+            return BigDecimal.ZERO;
+        }
+
+        return remaining;
+    }
 
     // Get all payments
     public List<Payment> getAllPayments() {
@@ -187,5 +327,46 @@ public class PaymentService {
 
         return paymentRepository
                 .findByAdmissionAdmissionId(admissionId);
+    }
+
+    public List<Payment> getPaymentsByAdmission(Integer admissionId) {
+
+        return paymentRepository
+                .findByAdmissionAdmissionId(admissionId);
+    }
+
+    public PaymentSummaryResponse getPaymentSummary(
+            Integer admissionId) {
+
+        Admission admission = admissionRepository
+                .findById(admissionId)
+                .orElseThrow(() ->
+                        new RuntimeException("Admission not found")
+                );
+
+        BigDecimal courseFee =
+                admission.getCourse().getFees();
+
+        BigDecimal totalPaid =
+                getTotalPaidForAdmission(admissionId);
+
+        BigDecimal remaining =
+                courseFee.subtract(totalPaid);
+
+        if (remaining.compareTo(BigDecimal.ZERO) < 0) {
+            remaining = BigDecimal.ZERO;
+        }
+
+        List<Payment> payments =
+                paymentRepository
+                        .findByAdmissionAdmissionId(admissionId);
+
+        return new PaymentSummaryResponse(
+                admissionId,
+                courseFee,
+                totalPaid,
+                remaining,
+                payments
+        );
     }
 }

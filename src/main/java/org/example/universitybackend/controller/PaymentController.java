@@ -1,5 +1,6 @@
 package org.example.universitybackend.controller;
 
+import org.example.universitybackend.dto.PaymentSummaryResponse;
 import org.example.universitybackend.dto.RazorpayOrderResponse;
 import org.example.universitybackend.entity.Payment;
 import org.example.universitybackend.service.PaymentService;
@@ -28,10 +29,7 @@ public class PaymentController {
         try {
 
             RazorpayOrderResponse response =
-                    paymentService.createOrder(
-                            admissionId,
-                            amount
-                    );
+                    paymentService.createOrder(admissionId,amount);
 
             return ResponseEntity.ok(response);
 
@@ -70,6 +68,15 @@ public class PaymentController {
         }
     }
 
+    @GetMapping("/admission/{admissionId}")
+    public ResponseEntity<List<Payment>> getPaymentsByAdmission(
+            @PathVariable Integer admissionId) {
+
+        return ResponseEntity.ok(
+                paymentService.getPaymentsByAdmission(admissionId)
+        );
+    }
+
 
     // Get all payments
     @GetMapping
@@ -88,13 +95,35 @@ public class PaymentController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-
-    // Get payments for an admission
-    @GetMapping("/admission/{admissionId}")
-    public List<Payment> getPaymentsByAdmissionId(
+    @GetMapping("/admission/{admissionId}/summary")
+    public ResponseEntity<PaymentSummaryResponse> getPaymentSummary(
             @PathVariable Integer admissionId) {
 
-        return paymentService
-                .getPaymentsByAdmissionId(admissionId);
+        return ResponseEntity.ok(
+                paymentService.getPaymentSummary(admissionId)
+        );
+    }
+
+    @GetMapping("/admission/{admissionId}/total-paid")
+    public ResponseEntity<BigDecimal> getTotalPaid(
+            @PathVariable Integer admissionId) {
+
+        return ResponseEntity.ok(
+                paymentService.getTotalPaidForAdmission(
+                        admissionId
+                )
+        );
+    }
+
+    @GetMapping("/admission/{admissionId}/remaining")
+    public ResponseEntity<BigDecimal> getRemainingAmount(
+            @PathVariable Integer admissionId) {
+
+        return ResponseEntity.ok(
+                paymentService.getRemainingAmount(
+                        admissionId
+                )
+        );
     }
 }
+
