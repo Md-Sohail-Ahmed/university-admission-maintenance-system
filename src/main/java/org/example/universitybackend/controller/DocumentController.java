@@ -4,7 +4,8 @@ import org.example.universitybackend.entity.Document;
 import org.example.universitybackend.service.DocumentService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
+import org.springframework.web.multipart.MultipartFile;
+import java.io.IOException;
 import java.util.List;
 
 @RestController
@@ -42,13 +43,35 @@ public class DocumentController {
     }
 
     // CREATE document
-    @PostMapping
-    public ResponseEntity<Document> createDocument(
-            @RequestBody Document document) {
+    @PostMapping("/upload")
+    public ResponseEntity<Document> uploadDocument(
+            @RequestParam("studentId") Integer studentId,
+            @RequestParam("documentType") String documentType,
+            @RequestParam("file") MultipartFile file) {
 
-        return ResponseEntity.ok(
-                documentService.createDocument(document)
-        );
+        try {
+
+            Document document =
+                    documentService.uploadDocument(
+                            studentId,
+                            documentType,
+                            file
+                    );
+
+            return ResponseEntity.ok(document);
+
+        } catch (IOException e) {
+
+            return ResponseEntity
+                    .internalServerError()
+                    .build();
+
+        } catch (RuntimeException e) {
+
+            return ResponseEntity
+                    .badRequest()
+                    .build();
+        }
     }
 
     // UPDATE document
@@ -86,7 +109,7 @@ public class DocumentController {
                     "Document deleted successfully"
             );
 
-        } catch (RuntimeException e) {
+        } catch (RuntimeException | IOException e) {
 
             return ResponseEntity.notFound().build();
         }
