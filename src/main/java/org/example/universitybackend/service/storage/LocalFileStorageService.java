@@ -19,6 +19,39 @@ public class LocalFileStorageService implements FileStorageService {
             MultipartFile file,
             Integer studentId) throws IOException {
 
+        if (file.isEmpty()) {
+            throw new RuntimeException("File is empty");
+        }
+
+        String originalFileName = file.getOriginalFilename();
+
+        if (originalFileName == null) {
+            throw new RuntimeException("Invalid file name");
+        }
+
+        String extension = "";
+
+        int dotIndex = originalFileName.lastIndexOf(".");
+
+        if (dotIndex >= 0) {
+            extension = originalFileName.substring(dotIndex)
+                    .toLowerCase();
+        }
+
+        if (!extension.equals(".pdf")
+                && !extension.equals(".jpg")
+                && !extension.equals(".jpeg")
+                && !extension.equals(".png")) {
+
+            throw new RuntimeException(
+                    "Only PDF, JPG, JPEG and PNG files are allowed"
+            );
+        }
+
+        String uniqueFileName =
+                java.util.UUID.randomUUID()
+                        + extension;
+
         Path studentDirectory =
                 uploadDirectory.resolve(
                         "students/" + studentId
@@ -26,10 +59,8 @@ public class LocalFileStorageService implements FileStorageService {
 
         Files.createDirectories(studentDirectory);
 
-        String fileName = file.getOriginalFilename();
-
         Path filePath =
-                studentDirectory.resolve(fileName);
+                studentDirectory.resolve(uniqueFileName);
 
         file.transferTo(filePath);
 
