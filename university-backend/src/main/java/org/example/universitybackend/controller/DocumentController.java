@@ -7,7 +7,8 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.util.List;
-
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 @RestController
 @RequestMapping("/api/documents")
 public class DocumentController {
@@ -112,6 +113,63 @@ public class DocumentController {
         } catch (RuntimeException | IOException e) {
 
             return ResponseEntity.notFound().build();
+        }
+    }
+    @GetMapping("/{id}/download")
+    public ResponseEntity<?> downloadDocument(
+            @PathVariable Integer id) {
+
+        try {
+
+            Document document =
+                    documentService.getDocumentById(id)
+                            .orElseThrow(() ->
+                                    new RuntimeException(
+                                            "Document not found"
+                                    )
+                            );
+
+            System.out.println(
+                    "Document file path: " +
+                            document.getFilePath()
+            );
+
+            byte[] file =
+                    documentService.downloadDocument(id);
+
+            return ResponseEntity.ok()
+                    .header(
+                            HttpHeaders.CONTENT_DISPOSITION,
+                            "attachment; filename=\"" +
+                                    document.getFileName() +
+                                    "\""
+                    )
+                    .contentType(
+                            MediaType.APPLICATION_OCTET_STREAM
+                    )
+                    .body(file);
+
+        } catch (IOException e) {
+
+            e.printStackTrace();
+
+            return ResponseEntity
+                    .internalServerError()
+                    .body(
+                            "File error: " +
+                                    e.getMessage()
+                    );
+
+        } catch (RuntimeException e) {
+
+            e.printStackTrace();
+
+            return ResponseEntity
+                    .status(404)
+                    .body(
+                            "Error: " +
+                                    e.getMessage()
+                    );
         }
     }
 }

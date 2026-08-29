@@ -1,51 +1,74 @@
-function Sidebar() {
+import { NavLink } from "react-router-dom";
+
+function Sidebar({ onNavigate }) {
+
+    const menuItems = [
+        {
+            name: "Dashboard",
+            path: "/"
+        },
+        {
+            name: "Admission",
+            path: "/admission"
+        },
+        {
+            name: "Payments",
+            path: "/payments"
+        },
+        {
+            name: "Documents",
+            path: "/documents"
+        },
+        {
+            name: "Profile",
+            path: "/profile"
+        }
+    ];
+
 
     return (
-        <aside className="hidden md:flex w-64 min-h-screen bg-slate-900 text-white flex-col">
+
+        <aside className="w-64 h-screen bg-slate-900 text-white flex flex-col">
 
             {/* Logo */}
+
             <div className="h-16 flex items-center px-6 border-b border-slate-700">
+
                 <h1 className="text-xl font-bold">
                     UAMS
                 </h1>
+
             </div>
 
 
             {/* Navigation */}
+
             <nav className="flex-1 p-4 space-y-2">
 
-                <a
-                    href="#"
-                    className="block px-4 py-3 rounded-lg bg-slate-700"
-                >
-                    Dashboard
-                </a>
+                {menuItems.map((item) => (
 
-                <a
-                    href="#"
-                    className="block px-4 py-3 rounded-lg hover:bg-slate-800"
-                >
-                    Admission
-                </a>
+                    <NavLink
+                        key={item.path}
+                        to={item.path}
+                        onClick={onNavigate}
+                        className={({ isActive }) =>
+                            `block px-4 py-3 rounded-lg transition ${
+                                isActive
+                                    ? "bg-slate-700"
+                                    : "hover:bg-slate-800"
+                            }`
+                        }
+                    >
+                        {item.name}
+                    </NavLink>
 
-                <a
-                    href="#"
-                    className="block px-4 py-3 rounded-lg hover:bg-slate-800"
-                >
-                    Payments
-                </a>
-
-                <a
-                    href="#"
-                    className="block px-4 py-3 rounded-lg hover:bg-slate-800"
-                >
-                    Documents
-                </a>
+                ))}
 
             </nav>
 
 
-            {/* Bottom */}
+            {/* Logout */}
+
             <div className="p-4 border-t border-slate-700">
 
                 <button

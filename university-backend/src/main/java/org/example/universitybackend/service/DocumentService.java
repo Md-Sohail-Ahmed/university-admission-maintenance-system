@@ -104,4 +104,21 @@ public class DocumentService {
         documentRepository.delete(document);
     }
 
+    public byte[] downloadDocument(Integer id)
+            throws IOException {
+
+        Document document =
+                documentRepository.findById(id)
+                        .orElseThrow(() ->
+                                new RuntimeException(
+                                        "Document not found"
+                                )
+                        );
+
+        return fileStorageService.loadFile(
+                document.getFilePath()
+        );
+    }
+
+
 }

@@ -75,4 +75,42 @@ public class LocalFileStorageService implements FileStorageService {
                 Paths.get(filePath)
         );
     }
+
+    @Override
+    public byte[] loadFile(String filePath)
+            throws IOException {
+
+        Path path = resolveFilePath(filePath);
+
+        System.out.println(
+                "Loading file from: " +
+                        path.toAbsolutePath()
+        );
+
+        if (!Files.exists(path)) {
+
+            throw new IOException(
+                    "File not found: " +
+                            path.toAbsolutePath()
+            );
+        }
+
+        return Files.readAllBytes(path);
+    }
+
+    private Path resolveFilePath(String filePath) {
+
+        // Remove leading / or \
+        String cleanPath =
+                filePath.replaceFirst(
+                        "^[\\\\/]+",
+                        ""
+                );
+
+        return Paths
+                .get("")
+                .toAbsolutePath()
+                .resolve(cleanPath)
+                .normalize();
+    }
 }

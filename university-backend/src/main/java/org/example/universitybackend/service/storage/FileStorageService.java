@@ -6,7 +6,16 @@ import java.io.IOException;
 
 public interface FileStorageService {
 
-    String storeFile(MultipartFile file, Integer studentId) throws IOException;
+    String storeFile(
+            MultipartFile file,
+            Integer studentId
+    ) throws IOException;
 
-    void deleteFile(String filePath) throws IOException;
+    void deleteFile(
+            String filePath
+    ) throws IOException;
+
+    byte[] loadFile(
+            String filePath
+    ) throws IOException;
 }
