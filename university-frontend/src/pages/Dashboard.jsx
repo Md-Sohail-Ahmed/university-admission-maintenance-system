@@ -1,456 +1,126 @@
-import { useEffect, useState } from "react";
+import {useCallback, useEffect, useState} from "react";
+import {Link} from "react-router-dom";
 import StatCard from "../components/StatCard";
-import {
-    getPaymentSummary,
-    getStudent,
-    getAdmission
-} from "../services/api";
+import {getAdmissionByStudent, getLoggedInStudent, getPaymentSummary, getStudent} from "../services/api";
+
+const Field = ({label, value}) => <div><p className="text-sm text-slate-500">{label}</p><p
+    className="mt-1 font-medium text-slate-900">{value || "—"}</p></div>;
+const statusClass = (s) => ({
+    APPROVED: "bg-green-100 text-green-700",
+    REJECTED: "bg-red-100 text-red-700"
+}[s] || "bg-yellow-100 text-yellow-700");
 
 function Dashboard() {
-
-    // Get logged-in student from localStorage
-    const loggedInStudent =
-        JSON.parse(localStorage.getItem("student"));
-
-    const studentId =
-        loggedInStudent?.studentId;
-
-    // Keep admission ID for now
-    const admissionId = 1;
-
+    const studentId = getLoggedInStudent()?.studentId;
     const [student, setStudent] = useState(null);
-    const [paymentSummary, setPaymentSummary] = useState(null);
     const [admission, setAdmission] = useState(null);
-
+    const [summary, setSummary] = useState(null);
+    const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
-
-
-    useEffect(() => {
-
-        const loadDashboard = async () => {
-
-            try {
-
-                if (!studentId) {
-                    throw new Error(
-                        "Student is not logged in"
-                    );
-                }
-
-                const studentData =
-                    await getStudent(studentId);
-
-                const paymentData =
-                    await getPaymentSummary(admissionId);
-
-                const admissionData =
-                    await getAdmission(admissionId);
-
-                setStudent(studentData);
-                setPaymentSummary(paymentData);
-                setAdmission(admissionData);
-
-            } catch (error) {
-
-                console.error(error);
-
-                setError(error.message);
-            }
-        };
-
-        loadDashboard();
-
+    const load = useCallback(async () => {
+        setLoading(true);
+        setError("");
+        try {
+            const currentStudent = await getStudent(studentId);
+            const currentAdmission = await getAdmissionByStudent(studentId);
+            setStudent(currentStudent);
+            setAdmission(currentAdmission);
+            setSummary(currentAdmission ? await getPaymentSummary(currentAdmission.admissionId) : null);
+        } catch (e) {
+            setError(e.message);
+        } finally {
+            setLoading(false);
+        }
     }, [studentId]);
-
-
-    if (error) {
-
-        return (
-            <div className="p-6">
-
-                <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-red-700">
-                    {error}
-                </div>
-
-            </div>
-        );
-    }
-
-
-    if (!student || !paymentSummary || !admission) {
-
-        return (
-            <div className="p-6">
-
-                <p className="text-slate-500">
-                    Loading dashboard...
-                </p>
-
-            </div>
-        );
-    }
-
-
-    return (
-        <div className="p-6">
-
-            {/* Welcome */}
-            <div className="mb-8">
-
-                <h1 className="text-2xl font-bold text-slate-900">
-                    Welcome back, {student.name} 👋
-                </h1>
-
-                <p className="mt-1 text-slate-500">
-                    Here's an overview of your admission.
-                </p>
-
-            </div>
-
-
-            {/* Payment Statistics */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-
-                <StatCard
-                    title="Course Fee"
-                    value={`₹${paymentSummary.courseFee}`}
-                    description="Total admission fee"
-                />
-
-                <StatCard
-                    title="Total Paid"
-                    value={`₹${paymentSummary.totalPaid}`}
-                    description="Successfully paid"
-                />
-
-                <StatCard
-                    title="Remaining"
-                    value={`₹${paymentSummary.remainingAmount}`}
-                    description="Amount remaining"
-                />
-
-            </div>
-
-
-            {/* Student Information */}
-            <div className="mt-8 bg-white rounded-xl border border-slate-200 shadow-sm">
-
-                <div className="p-6 border-b border-slate-200">
-
-                    <h2 className="text-lg font-semibold text-slate-900">
-                        Student Information
-                    </h2>
-
-                </div>
-
-
-                <div className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-
-                    <div>
-                        <p className="text-sm text-slate-500">
-                            Student ID
-                        </p>
-
-                        <p className="mt-1 font-medium">
-                            #{student.studentId}
-                        </p>
-                    </div>
-
-
-                    <div>
-                        <p className="text-sm text-slate-500">
-                            Full Name
-                        </p>
-
-                        <p className="mt-1 font-medium">
-                            {student.name}
-                        </p>
-                    </div>
-
-
-                    <div>
-                        <p className="text-sm text-slate-500">
-                            Email
-                        </p>
-
-                        <p className="mt-1 font-medium">
-                            {student.email}
-                        </p>
-                    </div>
-
-
-                    <div>
-                        <p className="text-sm text-slate-500">
-                            Phone
-                        </p>
-
-                        <p className="mt-1 font-medium">
-                            {student.phone}
-                        </p>
-                    </div>
-
-
-                    <div>
-                        <p className="text-sm text-slate-500">
-                            Gender
-                        </p>
-
-                        <p className="mt-1 font-medium">
-                            {student.gender}
-                        </p>
-                    </div>
-
-
-                    <div>
-                        <p className="text-sm text-slate-500">
-                            Date of Birth
-                        </p>
-
-                        <p className="mt-1 font-medium">
-                            {student.dateOfBirth}
-                        </p>
-                    </div>
-
-
-                    <div className="sm:col-span-2 lg:col-span-3">
-
-                        <p className="text-sm text-slate-500">
-                            Address
-                        </p>
-
-                        <p className="mt-1 font-medium">
-                            {student.address}
-                        </p>
-
-                    </div>
-
-                </div>
-
-            </div>
-
-
-            {/* Admission Details */}
-            <div className="mt-8 bg-white rounded-xl border border-slate-200 shadow-sm">
-
-                <div className="p-6 border-b border-slate-200">
-
-                    <h2 className="text-lg font-semibold text-slate-900">
-                        Admission Details
-                    </h2>
-
-                </div>
-
-
-                <div className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-
-                    {/* Admission ID */}
-                    <div>
-
-                        <p className="text-sm text-slate-500">
-                            Admission ID
-                        </p>
-
-                        <p className="mt-1 font-medium">
-                            #{admission.admissionId}
-                        </p>
-
-                    </div>
-
-
-                    {/* Course */}
-                    <div>
-
-                        <p className="text-sm text-slate-500">
-                            Course
-                        </p>
-
-                        <p className="mt-1 font-medium">
-                            {admission.course.courseName}
-                        </p>
-
-                    </div>
-
-
-                    {/* Duration */}
-                    <div>
-
-                        <p className="text-sm text-slate-500">
-                            Duration
-                        </p>
-
-                        <p className="mt-1 font-medium">
-                            {admission.course.duration}
-                        </p>
-
-                    </div>
-
-
-                    {/* Department */}
-                    <div>
-
-                        <p className="text-sm text-slate-500">
-                            Department
-                        </p>
-
-                        <p className="mt-1 font-medium">
-                            {admission.course.department.departmentName}
-                        </p>
-
-                    </div>
-
-
-                    {/* Course Fee */}
-                    <div>
-
-                        <p className="text-sm text-slate-500">
-                            Course Fee
-                        </p>
-
-                        <p className="mt-1 font-medium">
-                            ₹{admission.course.fees}
-                        </p>
-
-                    </div>
-
-
-                    {/* Application Date */}
-                    <div>
-
-                        <p className="text-sm text-slate-500">
-                            Application Date
-                        </p>
-
-                        <p className="mt-1 font-medium">
-                            {admission.applicationDate}
-                        </p>
-
-                    </div>
-
-
-                    {/* Approved Date */}
-                    <div>
-
-                        <p className="text-sm text-slate-500">
-                            Approved Date
-                        </p>
-
-                        <p className="mt-1 font-medium">
-                            {admission.approvedDate || "-"}
-                        </p>
-
-                    </div>
-
-
-                    {/* Status */}
-                    <div>
-
-                        <p className="text-sm text-slate-500">
-                            Status
-                        </p>
-
-                        <span className="inline-block mt-1 px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
-                            {admission.status}
-                        </span>
-
-                    </div>
-
-
-                    {/* Remarks */}
-                    <div className="sm:col-span-2 lg:col-span-3">
-
-                        <p className="text-sm text-slate-500">
-                            Remarks
-                        </p>
-
-                        <p className="mt-1 font-medium">
-                            {admission.remarks || "-"}
-                        </p>
-
-                    </div>
-
-                </div>
-
-            </div>
-
-
-            {/* Payment History */}
-            <div className="mt-8 bg-white rounded-xl border border-slate-200 shadow-sm">
-
-                <div className="p-6 border-b border-slate-200">
-
-                    <h2 className="text-lg font-semibold text-slate-900">
-                        Payment History
-                    </h2>
-
-                </div>
-
-
-                <div className="overflow-x-auto">
-
-                    <table className="w-full text-sm">
-
-                        <thead className="bg-slate-50">
-
-                        <tr>
-
-                            <th className="text-left px-6 py-3 font-medium text-slate-500">
-                                Amount
-                            </th>
-
-                            <th className="text-left px-6 py-3 font-medium text-slate-500">
-                                Payment Mode
-                            </th>
-
-                            <th className="text-left px-6 py-3 font-medium text-slate-500">
-                                Status
-                            </th>
-
-                        </tr>
-
-                        </thead>
-
-
-                        <tbody>
-
-                        {paymentSummary.payments.map(
-                            (payment) => (
-
-                                <tr
-                                    key={payment.paymentId}
-                                    className="border-t border-slate-100"
-                                >
-
-                                    <td className="px-6 py-4 font-medium">
-                                        ₹{payment.amount}
-                                    </td>
-
-                                    <td className="px-6 py-4 capitalize">
-                                        {payment.paymentMode || "-"}
-                                    </td>
-
-                                    <td className="px-6 py-4">
-
-                                            <span className="px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
-                                                {payment.status}
-                                            </span>
-
-                                    </td>
-
-                                </tr>
-
-                            )
-                        )}
-
-                        </tbody>
-
-                    </table>
-
-                </div>
-
-            </div>
-
+    useEffect(() => {
+        load();
+    }, [load]);
+    if (loading) return <div className="p-6 text-slate-500">Loading dashboard...</div>;
+    if (error) return <div className="p-6">
+        <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-red-700">{error}
+            <button onClick={load} className="underline">Retry</button>
         </div>
-    );
+    </div>;
+    const course = admission?.course || {};
+    return <div className="p-4 sm:p-6">
+        <div className="mb-8"><h1 className="text-2xl font-bold text-slate-900">Welcome back, {student?.name} 👋</h1><p
+            className="mt-1 text-slate-500">Here is an overview of your admission.</p></div>
+        <section className="mb-7 rounded-xl border border-slate-200 bg-white p-5 shadow-sm"><h2
+            className="font-semibold">Quick Actions</h2>
+            <div className="mt-4 flex flex-wrap gap-3"><Link to="/courses"
+                                                             className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white">View
+                Courses</Link>{!admission ?
+                <Link to="/courses" className="rounded-lg border px-4 py-2 text-sm font-medium">Apply for
+                    Admission</Link> : <><Link to="/admission"
+                                               className="rounded-lg border px-4 py-2 text-sm font-medium">View
+                    Admission</Link><Link to="/documents" className="rounded-lg border px-4 py-2 text-sm font-medium">Upload
+                    Documents</Link>{admission.status === "APPROVED" &&
+                    <Link to="/payments" className="rounded-lg border px-4 py-2 text-sm font-medium">Pay
+                        Fees</Link>}</>}<Link to="/profile" className="rounded-lg border px-4 py-2 text-sm font-medium">View
+                Profile</Link></div>
+        </section>
+        {summary ? <>
+                <div className="grid grid-cols-1 gap-5 sm:grid-cols-3"><StatCard title="Course Fee"
+                                                                                 value={`₹${summary.courseFee}`}
+                                                                                 description="Total admission fee"/><StatCard
+                    title="Total Paid" value={`₹${summary.totalPaid}`} description="Successfully paid"/><StatCard
+                    title="Remaining" value={`₹${summary.remainingAmount}`} description="Amount remaining"/></div>
+            </> :
+            <div className="rounded-xl border border-slate-200 bg-white p-5 text-slate-500">Payment details will appear
+                once an admission is available.</div>}
+        <section className="mt-7 rounded-xl border border-slate-200 bg-white shadow-sm">
+            <div className="border-b p-5"><h2 className="font-semibold">Student Information</h2></div>
+            <div className="grid grid-cols-1 gap-6 p-5 sm:grid-cols-2 lg:grid-cols-3"><Field label="Student ID"
+                                                                                             value={student?.studentId ? `#${student.studentId}` : null}/><Field
+                label="Email" value={student?.email}/><Field label="Phone" value={student?.phone}/><Field label="Gender"
+                                                                                                          value={student?.gender}/><Field
+                label="Date of Birth" value={student?.dateOfBirth}/><Field label="Department"
+                                                                           value={course.department?.departmentName || student?.department?.departmentName}/>
+                <div className="sm:col-span-2 lg:col-span-3"><Field label="Address" value={student?.address}/></div>
+            </div>
+        </section>
+        {admission ? <>
+                <section className="mt-7 rounded-xl border border-slate-200 bg-white shadow-sm">
+                    <div className="border-b p-5"><h2 className="font-semibold">Admission Information</h2></div>
+                    <div className="grid grid-cols-1 gap-6 p-5 sm:grid-cols-2 lg:grid-cols-3"><Field label="Admission ID"
+                                                                                                     value={`#${admission.admissionId}`}/><Field
+                        label="Course" value={course.courseName}/><Field label="Course Duration"
+                                                                         value={course.duration}/><Field label="Course Fee"
+                                                                                                         value={course.fees != null ? `₹${course.fees}` : null}/><Field
+                        label="Application Date" value={admission.applicationDate}/><Field label="Approved Date"
+                                                                                           value={admission.approvedDate}/>
+                        <div><p className="text-sm text-slate-500">Admission Status</p><span
+                            className={`mt-1 inline-block rounded-full px-3 py-1 text-sm font-medium ${statusClass(admission.status)}`}>{admission.status}</span>
+                        </div>
+                        <Field label="Remarks" value={admission.remarks}/></div>
+                </section>
+                {summary && <section className="mt-7 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+                    <div className="border-b p-5"><h2 className="font-semibold">Payment History</h2></div>
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                            <thead className="bg-slate-50 text-left text-slate-500">
+                            <tr>
+                                <th className="px-5 py-3">Payment ID</th>
+                                <th className="px-5 py-3">Amount</th>
+                                <th className="px-5 py-3">Mode</th>
+                                <th className="px-5 py-3">Status</th>
+                            </tr>
+                            </thead>
+                            <tbody>{summary.payments?.length ? summary.payments.map((p) => <tr key={p.paymentId}
+                                                                                               className="border-t">
+                                <td className="px-5 py-4">#{p.paymentId}</td>
+                                <td className="px-5 py-4">₹{p.amount}</td>
+                                <td className="px-5 py-4 capitalize">{p.paymentMode || "—"}</td>
+                                <td className="px-5 py-4">{p.status}</td>
+                            </tr>) : <tr>
+                                <td colSpan="4" className="p-8 text-center text-slate-500">No payments yet.</td>
+                            </tr>}</tbody>
+                        </table>
+                    </div>
+                </section>}</> :
+            <div className="mt-7 rounded-xl border border-slate-200 bg-white p-8 text-center text-slate-500">No
+                admission has been created for your account yet.</div>}
+    </div>;
 }
 
 export default Dashboard;

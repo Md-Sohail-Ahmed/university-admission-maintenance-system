@@ -67,7 +67,11 @@ public class PaymentService {
         }
         // Validate amount
         if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new RuntimeException("Invalid course fee");
+            throw new RuntimeException("Payment amount must be greater than zero");
+        }
+
+        if (amount.compareTo(remaining) > 0) {
+            throw new RuntimeException("Payment amount cannot exceed the remaining balance");
         }
 
         // Convert rupees to paise

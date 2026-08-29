@@ -41,6 +41,19 @@ public class StudentService {
         return studentRepository.save(student);
     }
 
+    public Student registerStudent(Student student) {
+        if (student.getName() == null || student.getName().isBlank()
+                || student.getEmail() == null || student.getEmail().isBlank()
+                || student.getPassword() == null || student.getPassword().isBlank()) {
+            throw new RuntimeException("Name, email, and password are required");
+        }
+        if (studentRepository.existsByEmail(student.getEmail().trim())) {
+            throw new RuntimeException("Email already registered");
+        }
+        student.setEmail(student.getEmail().trim().toLowerCase());
+        return studentRepository.save(student);
+    }
+
     // Update student
     public Student updateStudent(
             Integer id,

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import {
     getStudentDocuments,
@@ -6,10 +6,12 @@ import {
     deleteDocument,
     downloadDocument
 } from "../services/api";
+import ConfirmationModal from "../components/ConfirmationModal";
 
 function Documents() {
 
-    const studentId = 1;
+    const studentId = JSON.parse(localStorage.getItem("student") || "null")?.studentId;
+    const [initialLoading, setInitialLoading] = useState(true);
 
 
     const [documents, setDocuments] = useState([]);
@@ -28,9 +30,17 @@ function Documents() {
 
     const [success, setSuccess] =
         useState("");
+    const [documentToDelete, setDocumentToDelete] = useState(null);
+
+    const requiredDocuments = [
+        ["AADHAAR", "Aadhaar"],
+        ["MARKSHEET", "10th / 12th Marksheet"],
+        ["PHOTO", "Photograph"],
+        ["TRANSFER_CERTIFICATE", "Transfer Certificate"]
+    ];
 
 
-    const loadDocuments = async () => {
+    const loadDocuments = useCallback(async () => {
 
         try {
 
@@ -42,19 +52,18 @@ function Documents() {
             setDocuments(data);
 
         } catch (error) {
-
-            console.error(error);
-
             setError(error.message);
+        } finally {
+            setInitialLoading(false);
         }
-    };
+    }, [studentId]);
 
 
     useEffect(() => {
 
         loadDocuments();
 
-    }, []);
+    }, [loadDocuments]);
 
 
     const handleUpload = async (event) => {
@@ -116,8 +125,6 @@ function Documents() {
 
         } catch (error) {
 
-            console.error(error);
-
             setError(error.message);
 
         } finally {
@@ -127,26 +134,16 @@ function Documents() {
     };
 
 
-    const handleDelete = async (documentId) => {
+    const handleDelete = async () => {
 
-        const confirmed =
-            window.confirm(
-                "Are you sure you want to delete this document?"
-            );
-
-
-        if (!confirmed) {
-            return;
-        }
-
-
+        if (!documentToDelete) return;
         try {
 
             setError("");
             setSuccess("");
 
 
-            await deleteDocument(documentId);
+            await deleteDocument(documentToDelete);
 
 
             setSuccess(
@@ -155,11 +152,10 @@ function Documents() {
 
 
             await loadDocuments();
+            setDocumentToDelete(null);
 
 
         } catch (error) {
-
-            console.error(error);
 
             setError(error.message);
         }
@@ -193,8 +189,6 @@ function Documents() {
             window.URL.revokeObjectURL(url);
 
         } catch (error) {
-
-            console.error(error);
 
             setError(error.message);
         }
@@ -237,8 +231,6 @@ function Documents() {
 
         } catch (error) {
 
-            console.error(error);
-
             setError(error.message);
         }
     };
@@ -246,6 +238,14 @@ function Documents() {
     return (
 
         <div className="p-6">
+            <ConfirmationModal
+                open={Boolean(documentToDelete)}
+                title="Delete document?"
+                message="This removes the uploaded document from your application. This action cannot be undone."
+                confirmLabel="Delete document"
+                onCancel={() => setDocumentToDelete(null)}
+                onConfirm={handleDelete}
+            />
 
             {/* Header */}
 
@@ -283,6 +283,18 @@ function Documents() {
 
 
             {/* Upload Form */}
+
+            <div className="mb-8 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+                <h2 className="text-lg font-semibold text-slate-900">Required Documents</h2>
+                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                    {requiredDocuments.map(([type, label]) => {
+                        const uploaded = documents.some((document) => document.documentType === type);
+                        return <div key={type} className={`rounded-lg px-4 py-3 text-sm ${uploaded ? "bg-green-50 text-green-700" : "bg-amber-50 text-amber-700"}`}>
+                            {uploaded ? "✓" : "○"} {label} — {uploaded ? "Uploaded" : "Missing"}
+                        </div>;
+                    })}
+                </div>
+            </div>
 
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
 
@@ -414,7 +426,9 @@ function Documents() {
                 </div>
 
 
-                {documents.length === 0 ? (
+                {initialLoading ? (
+                    <div className="p-8 text-center text-slate-500">Loading documents...</div>
+                ) : documents.length === 0 ? (
 
                     <div className="p-8 text-center">
 
@@ -443,6 +457,10 @@ function Documents() {
                                 </th>
 
                                 <th className="text-left px-6 py-4 font-medium text-slate-500">
+                                    Uploaded
+                                </th>
+
+                                <th className="text-left px-6 py-4 font-medium text-slate-500">
                                     Action
                                 </th>
 
@@ -468,6 +486,10 @@ function Documents() {
 
                                         <td className="px-6 py-4 text-slate-600">
                                             {document.fileName || "-"}
+                                        </td>
+
+                                        <td className="px-6 py-4 text-slate-600">
+                                            {document.uploadedAt ? new Date(document.uploadedAt).toLocaleDateString() : "-"}
                                         </td>
 
 
@@ -503,9 +525,7 @@ function Documents() {
 
                                                 <button
                                                     onClick={() =>
-                                                        handleDelete(
-                                                            document.documentId
-                                                        )
+                                                        setDocumentToDelete(document.documentId)
                                                     }
                                                     className="px-3 py-2 rounded-lg text-sm font-medium text-red-600 hover:bg-red-50"
                                                 >

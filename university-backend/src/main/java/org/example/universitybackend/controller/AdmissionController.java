@@ -33,6 +33,16 @@ public class AdmissionController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
+    // GET the single admission owned by a student
+    @GetMapping("/student/{studentId}")
+    public ResponseEntity<Admission> getAdmissionByStudentId(
+            @PathVariable Integer studentId) {
+
+        return admissionService.getAdmissionByStudentId(studentId)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
     @PostMapping
     public ResponseEntity<?> createAdmission(
             @RequestBody Admission admission) {
@@ -52,34 +62,6 @@ public class AdmissionController {
                     .body(e.getMessage());
         }
     }
-
-    // GET admission by student ID
-//    @GetMapping("/student/{studentId}")
-//    public ResponseEntity<Admission> getAdmissionByStudentId(
-//            @PathVariable Integer studentId) {
-//
-//        return admissionService.getAdmissionByStudentId(studentId)
-//                .map(ResponseEntity::ok)
-//                .orElse(ResponseEntity.notFound().build());
-//    }
-//
-//    // CREATE admission
-//    @PostMapping
-//    public ResponseEntity<Admission> createAdmission(
-//            @RequestBody Admission admission) {
-//
-//        try {
-//
-//            Admission savedAdmission =
-//                    admissionService.createAdmission(admission);
-//
-//            return ResponseEntity.ok(savedAdmission);
-//
-//        } catch (RuntimeException e) {
-//
-//            return ResponseEntity.badRequest().build();
-//        }
-//    }
 
     // UPDATE admission
     @PutMapping("/{id}")
@@ -102,6 +84,18 @@ public class AdmissionController {
             return ResponseEntity.notFound().build();
         }
     }
+
+    @PatchMapping("/{id}/status")
+    public ResponseEntity<?> updateAdmissionStatus(@PathVariable Integer id,
+                                                    @RequestBody AdmissionStatusRequest request) {
+        try {
+            return ResponseEntity.ok(admissionService.updateAdmissionStatus(id, request.status(), request.remarks()));
+        } catch (RuntimeException exception) {
+            return ResponseEntity.badRequest().body(exception.getMessage());
+        }
+    }
+
+    public record AdmissionStatusRequest(String status, String remarks) { }
 
     // DELETE admission
     @DeleteMapping("/{id}")

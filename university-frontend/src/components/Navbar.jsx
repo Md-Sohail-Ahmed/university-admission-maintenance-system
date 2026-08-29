@@ -1,7 +1,13 @@
+import { getLoggedInStudent } from "../services/api";
+import { Link } from "react-router-dom";
+
 function Navbar({ onMenuClick }) {
 
+    const student = getLoggedInStudent();
+    const initials = student?.name?.split(" ").map((part) => part[0]).join("").slice(0, 2).toUpperCase() || "ST";
+
     return (
-        <header className="h-16 bg-white border-b flex items-center justify-between px-6">
+        <header className="z-20 flex h-16 shrink-0 items-center justify-between border-b bg-white px-6 shadow-sm">
 
             <button
                 onClick={onMenuClick}
@@ -30,12 +36,16 @@ function Navbar({ onMenuClick }) {
             </div>
 
 
-            <div className="flex items-center gap-3">
+            <Link
+                to="/profile"
+                className="flex items-center gap-3 rounded-lg p-1 transition hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-slate-400"
+                aria-label="View my profile"
+            >
 
                 <div className="text-right hidden sm:block">
 
                     <p className="text-sm font-medium text-slate-800">
-                        Test Student
+                        {student?.name || "Student"}
                     </p>
 
                     <p className="text-xs text-slate-500">
@@ -46,10 +56,10 @@ function Navbar({ onMenuClick }) {
 
 
                 <div className="w-10 h-10 rounded-full bg-slate-800 text-white flex items-center justify-center font-semibold">
-                    TS
+                    {initials}
                 </div>
 
-            </div>
+            </Link>
 
         </header>
     );

@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
+import java.time.LocalDate;
 
 @Service
 public class AdmissionService {
@@ -90,7 +91,22 @@ public class AdmissionService {
         admission.setStudent(student);
         admission.setCourse(course);
         admission.setAdmin(admin);
+        admission.setStatus("PENDING");
+        admission.setApplicationDate(LocalDate.now());
+        admission.setApprovedDate(null);
 
+        return admissionRepository.save(admission);
+    }
+
+    public Admission updateAdmissionStatus(Integer id, String status, String remarks) {
+        Admission admission = admissionRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Admission not found"));
+        if (!"APPROVED".equals(status) && !"REJECTED".equals(status)) {
+            throw new RuntimeException("Invalid admission status");
+        }
+        admission.setStatus(status);
+        admission.setRemarks(remarks);
+        admission.setApprovedDate("APPROVED".equals(status) ? LocalDate.now() : null);
         return admissionRepository.save(admission);
     }
 

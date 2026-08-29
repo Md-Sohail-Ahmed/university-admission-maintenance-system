@@ -1,11 +1,17 @@
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 
 function Sidebar({ onNavigate }) {
+
+    const navigate = useNavigate();
 
     const menuItems = [
         {
             name: "Dashboard",
             path: "/"
+        },
+        {
+            name: "Courses",
+            path: "/courses"
         },
         {
             name: "Admission",
@@ -72,6 +78,11 @@ function Sidebar({ onNavigate }) {
             <div className="p-4 border-t border-slate-700">
 
                 <button
+                    onClick={() => {
+                        localStorage.removeItem("student");
+                        onNavigate?.();
+                        navigate("/login", { replace: true });
+                    }}
                     className="w-full text-left px-4 py-3 rounded-lg hover:bg-slate-800"
                 >
                     Logout

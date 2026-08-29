@@ -1,16 +1,24 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { loginStudent } from "../services/api";
+import { useEffect, useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { loginAdmin, loginStudent } from "../services/api";
 
 function Login() {
 
     const navigate = useNavigate();
+    const location = useLocation();
 
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
 
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
+    const [role, setRole] = useState("student");
+
+    useEffect(() => {
+        if (localStorage.getItem("student")) navigate("/", { replace: true });
+        if (localStorage.getItem("admin")) navigate("/admin", { replace: true });
+    }, [navigate]);
 
 
     const handleLogin = async (e) => {
@@ -18,24 +26,30 @@ function Login() {
         e.preventDefault();
 
         setError("");
+
+        if (!email.trim() || !password) {
+            setError("Enter your email address and password.");
+            return;
+        }
+
+        if (!email.includes("@")) {
+            setError("Enter a valid email address.");
+            return;
+        }
+
         setLoading(true);
 
         try {
 
-            const student =
-                await loginStudent(
-                    email,
-                    password
-                );
-
-            // Save logged-in student
-            localStorage.setItem(
-                "student",
-                JSON.stringify(student)
-            );
-
-            // Go to dashboard
-            navigate("/");
+            if (role === "admin") {
+                const admin = await loginAdmin(email, password);
+                localStorage.setItem("admin", JSON.stringify(admin));
+                navigate("/admin");
+            } else {
+                const student = await loginStudent(email, password);
+                localStorage.setItem("student", JSON.stringify(student));
+                navigate("/");
+            }
 
         } catch (error) {
 
@@ -67,7 +81,7 @@ function Login() {
                     </h1>
 
                     <p className="mt-2 text-slate-500">
-                        Student Portal
+                        {role === "admin" ? "Admin Portal" : "Student Portal"}
                     </p>
 
                 </div>
@@ -96,11 +110,22 @@ function Login() {
 
                     )}
 
+                    {location.state?.message && (
+                        <div className="mt-5 rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-700">
+                            {location.state.message}
+                        </div>
+                    )}
+
 
                     <form
                         onSubmit={handleLogin}
                         className="mt-6 space-y-5"
                     >
+
+                        <div className="grid grid-cols-2 rounded-lg bg-slate-100 p-1 text-sm font-medium">
+                            <button type="button" onClick={() => setRole("student")} className={`rounded-md px-3 py-2 ${role === "student" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500"}`}>Student</button>
+                            <button type="button" onClick={() => setRole("admin")} className={`rounded-md px-3 py-2 ${role === "admin" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500"}`}>Admin</button>
+                        </div>
 
                         {/* Email */}
 
@@ -132,16 +157,21 @@ function Login() {
                                 Password
                             </label>
 
+                            <div className="relative">
                             <input
-                                type="password"
+                                type={showPassword ? "text" : "password"}
                                 value={password}
                                 onChange={(e) =>
                                     setPassword(e.target.value)
                                 }
                                 placeholder="Enter your password"
                                 required
-                                className="w-full rounded-lg border border-slate-300 px-4 py-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                                className="w-full rounded-lg border border-slate-300 px-4 py-3 pr-16 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                             />
+                            <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-3 text-sm font-medium text-slate-600">
+                                {showPassword ? "Hide" : "Show"}
+                            </button>
+                            </div>
 
                         </div>
 
@@ -161,6 +191,10 @@ function Login() {
                     </form>
 
                 </div>
+
+                <p className="mt-5 text-center text-sm text-slate-600">
+                    {role === "student" && <>Don't have an account? <Link to="/register" className="font-medium text-blue-600 hover:text-blue-700">Register</Link></>}
+                </p>
 
 
                 <p className="mt-6 text-center text-sm text-slate-500">
