@@ -1,0 +1,12 @@
+**/target/
+**/node_modules/
+**/dist/
+
+**/application-local.properties
+**/local.properties
+
+.idea/
+*.iml
+
+.DS_Store
+Thumbs.db
