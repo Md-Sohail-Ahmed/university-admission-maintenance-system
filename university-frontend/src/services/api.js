@@ -143,3 +143,43 @@ export const getStudent = async (studentId) => {
 
     return response.json();
 };
+
+export const loginStudent = async (email, password) => {
+
+    const response = await fetch(
+        `${API_BASE_URL}/api/auth/login`,
+        {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                email,
+                password
+            })
+        }
+    );
+
+    if (!response.ok) {
+
+        const message = await response.text();
+
+        throw new Error(
+            message || "Invalid email or password"
+        );
+    }
+
+    return response.json();
+};
+
+export const getLoggedInStudent = () => {
+
+    const student =
+        localStorage.getItem("student");
+
+    if (!student) {
+        return null;
+    }
+
+    return JSON.parse(student);
+};

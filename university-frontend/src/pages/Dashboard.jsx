@@ -8,7 +8,14 @@ import {
 
 function Dashboard() {
 
-    const studentId = 1;
+    // Get logged-in student from localStorage
+    const loggedInStudent =
+        JSON.parse(localStorage.getItem("student"));
+
+    const studentId =
+        loggedInStudent?.studentId;
+
+    // Keep admission ID for now
     const admissionId = 1;
 
     const [student, setStudent] = useState(null);
@@ -23,6 +30,12 @@ function Dashboard() {
         const loadDashboard = async () => {
 
             try {
+
+                if (!studentId) {
+                    throw new Error(
+                        "Student is not logged in"
+                    );
+                }
 
                 const studentData =
                     await getStudent(studentId);
@@ -47,7 +60,7 @@ function Dashboard() {
 
         loadDashboard();
 
-    }, []);
+    }, [studentId]);
 
 
     if (error) {
