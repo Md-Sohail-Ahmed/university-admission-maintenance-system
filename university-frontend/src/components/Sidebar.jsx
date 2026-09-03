@@ -21,10 +21,10 @@ function Sidebar({ onNavigate }) {
             name: "Payments",
             path: "/payments"
         },
-        // {
-        //     name: "Documents",
-        //     path: "/documents"
-        // },
+        {
+            name: "Documents",
+            path: "/documents"
+        },
         {
             name: "Profile",
             path: "/profile"
