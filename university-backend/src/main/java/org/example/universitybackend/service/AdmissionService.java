@@ -5,6 +5,8 @@ import org.example.universitybackend.repository.AdmissionRepository;
 import org.example.universitybackend.repository.StudentRepository;
 import org.example.universitybackend.repository.CourseRepository;
 import org.example.universitybackend.repository.AdminRepository;
+import org.example.universitybackend.repository.DocumentRepository;
+import org.example.universitybackend.entity.Document;
 import org.example.universitybackend.entity.Student;
 import org.example.universitybackend.entity.Course;
 import org.example.universitybackend.entity.Admin;
@@ -21,17 +23,20 @@ public class AdmissionService {
     private final StudentRepository studentRepository;
     private final CourseRepository courseRepository;
     private final AdminRepository adminRepository;
+    private final DocumentRepository documentRepository;
 
     public AdmissionService(
             AdmissionRepository admissionRepository,
             StudentRepository studentRepository,
             CourseRepository courseRepository,
-            AdminRepository adminRepository) {
+            AdminRepository adminRepository,
+            DocumentRepository documentRepository) {
 
         this.admissionRepository = admissionRepository;
         this.studentRepository = studentRepository;
         this.courseRepository = courseRepository;
         this.adminRepository = adminRepository;
+        this.documentRepository = documentRepository;
     }
 
     // Get all admissions
@@ -78,6 +83,8 @@ public class AdmissionService {
                 .orElseThrow(() ->
                         new RuntimeException("Course not found"));
 
+        validateRequiredDocuments(studentId, course);
+
         // Get actual Admin from database
         Admin admin = null;
 
@@ -96,6 +103,34 @@ public class AdmissionService {
         admission.setApprovedDate(null);
 
         return admissionRepository.save(admission);
+    }
+
+    private void validateRequiredDocuments(Integer studentId, Course course) {
+        List<String> uploadedTypes = documentRepository.findByStudentStudentId(studentId)
+                .stream()
+                .map(Document::getDocumentType)
+                .toList();
+
+        List<String> required = requiredDocumentTypes(course.getCourseName());
+        List<String> missing = required.stream()
+                .filter(type -> !uploadedTypes.contains(type))
+                .toList();
+
+        if (!missing.isEmpty()) {
+            throw new RuntimeException("Upload required documents before applying: "
+                    + String.join(", ", missing));
+        }
+    }
+
+    private List<String> requiredDocumentTypes(String courseName) {
+        String normalized = courseName == null ? "" : courseName.toUpperCase();
+        if (normalized.contains("PHD") || normalized.contains("PH.D")) {
+            return List.of("AADHAAR", "PHOTO", "MTECH_DEGREE", "RESEARCH_PROPOSAL");
+        }
+        if (normalized.contains("MTECH") || normalized.contains("M.TECH")) {
+            return List.of("AADHAAR", "PHOTO", "BTECH_DEGREE");
+        }
+        return List.of("AADHAAR", "PHOTO", "TENTH_MARKSHEET", "TWELFTH_MARKSHEET");
     }
 
     public Admission updateAdmissionStatus(Integer id, String status, String remarks) {

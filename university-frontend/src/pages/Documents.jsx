@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 
 import {
     getStudentDocuments,
@@ -7,10 +8,15 @@ import {
     downloadDocument
 } from "../services/api";
 import ConfirmationModal from "../components/ConfirmationModal";
+import { getCourse } from "../services/api";
+import { getDocumentRequirements } from "../utils/documentRequirements";
 
 function Documents() {
 
     const studentId = JSON.parse(localStorage.getItem("student") || "null")?.studentId;
+    const [searchParams] = useSearchParams();
+    const courseId = searchParams.get("courseId");
+    const [course, setCourse] = useState(null);
     const [initialLoading, setInitialLoading] = useState(true);
 
 
@@ -32,12 +38,7 @@ function Documents() {
         useState("");
     const [documentToDelete, setDocumentToDelete] = useState(null);
 
-    const requiredDocuments = [
-        ["AADHAAR", "Aadhaar"],
-        ["MARKSHEET", "10th / 12th Marksheet"],
-        ["PHOTO", "Photograph"],
-        ["TRANSFER_CERTIFICATE", "Transfer Certificate"]
-    ];
+    const requiredDocuments = getDocumentRequirements(course?.courseName);
 
 
     const loadDocuments = useCallback(async () => {
@@ -64,6 +65,12 @@ function Documents() {
         loadDocuments();
 
     }, [loadDocuments]);
+
+    useEffect(() => {
+        if (courseId) {
+            getCourse(courseId).then(setCourse).catch((loadError) => setError(loadError.message));
+        }
+    }, [courseId]);
 
 
     const handleUpload = async (event) => {
@@ -256,7 +263,7 @@ function Documents() {
                 </h1>
 
                 <p className="mt-1 text-slate-500">
-                    Upload and manage your admission documents.
+                    {course ? `Upload the mandatory documents for ${course.courseName}.` : "Upload and manage your admission documents."}
                 </p>
 
             </div>
@@ -346,8 +353,24 @@ function Documents() {
                                     Aadhaar Card
                                 </option>
 
-                                <option value="MARKSHEET">
-                                    Marksheet
+                                <option value="TENTH_MARKSHEET">
+                                    10th Marksheet
+                                </option>
+
+                                <option value="TWELFTH_MARKSHEET">
+                                    12th Marksheet
+                                </option>
+
+                                <option value="BTECH_DEGREE">
+                                    B.Tech Degree Certificate
+                                </option>
+
+                                <option value="MTECH_DEGREE">
+                                    M.Tech Degree Certificate
+                                </option>
+
+                                <option value="RESEARCH_PROPOSAL">
+                                    Research Proposal
                                 </option>
 
                                 <option value="TRANSFER_CERTIFICATE">
