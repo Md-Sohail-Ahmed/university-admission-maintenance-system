@@ -2,6 +2,7 @@ package org.example.universitybackend.service;
 
 import org.example.universitybackend.entity.Student;
 import org.example.universitybackend.repository.StudentRepository;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -11,9 +12,12 @@ import java.util.Optional;
 public class StudentService {
 
     private final StudentRepository studentRepository;
+    private final PasswordEncoder passwordEncoder;
 
-    public StudentService(StudentRepository studentRepository) {
+    public StudentService(StudentRepository studentRepository,
+                          PasswordEncoder passwordEncoder) {
         this.studentRepository = studentRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     // Get all students
@@ -34,23 +38,67 @@ public class StudentService {
     // Create student
     public Student createStudent(Student student) {
 
-        if (studentRepository.existsByEmail(student.getEmail())) {
+        if (student.getEmail() == null || student.getEmail().isBlank()) {
+            throw new RuntimeException("Email is required");
+        }
+
+        if (studentRepository.existsByEmail(
+                student.getEmail().trim().toLowerCase())) {
+
             throw new RuntimeException("Email already registered");
+        }
+
+        student.setEmail(
+                student.getEmail()
+                        .trim()
+                        .toLowerCase()
+        );
+
+        // HASH PASSWORD BEFORE SAVING
+        if (student.getPassword() != null
+                && !student.getPassword().isBlank()) {
+
+            student.setPassword(
+                    passwordEncoder.encode(
+                            student.getPassword()
+                    )
+            );
         }
 
         return studentRepository.save(student);
     }
 
+    // Register student
     public Student registerStudent(Student student) {
+
         if (student.getName() == null || student.getName().isBlank()
                 || student.getEmail() == null || student.getEmail().isBlank()
                 || student.getPassword() == null || student.getPassword().isBlank()) {
-            throw new RuntimeException("Name, email, and password are required");
+
+            throw new RuntimeException(
+                    "Name, email, and password are required"
+            );
         }
-        if (studentRepository.existsByEmail(student.getEmail().trim())) {
-            throw new RuntimeException("Email already registered");
+
+        String email = student.getEmail()
+                .trim()
+                .toLowerCase();
+
+        if (studentRepository.existsByEmail(email)) {
+            throw new RuntimeException(
+                    "Email already registered"
+            );
         }
-        student.setEmail(student.getEmail().trim().toLowerCase());
+
+        student.setEmail(email);
+
+        // HASH PASSWORD BEFORE SAVING
+        student.setPassword(
+                passwordEncoder.encode(
+                        student.getPassword()
+                )
+        );
+
         return studentRepository.save(student);
     }
 
